@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENOM Daily</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #dc2626;
+    --white: #f0f0f0;
+    --gray: #555;
+    --dim: #2a2a2a;
+    --bg: #191919;
+    --border: #1f1f1f;
+    --card: rgba(255,255,255,0.02);
+  }
+
+  html, body {
+    background: #191919 !important;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .container {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Section */
+  .section {
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards;
+  }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 4px rgba(220,38,38,0.8);
+  }
+
+  .section-title {
+    font-size: 8px;
+    letter-spacing: 0.45em;
+    color: var(--gray);
+    text-transform: uppercase;
+  }
+
+  .section-day {
+    margin-left: auto;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* Reminders */
+  .reminder-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .reminder-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .reminder-item:hover { border-color: #2a2a2a; background: rgba(255,255,255,0.04); }
+  .reminder-item.done { opacity: 0.35; }
+  .reminder-item.done .reminder-text { text-decoration: line-through; }
+
+  .checkbox {
+    width: 12px; height: 12px;
+    border: 1px solid #333;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .reminder-item.done .checkbox {
+    border-color: var(--red);
+    background: rgba(220,38,38,0.15);
+  }
+
+  .check-icon {
+    display: none;
+    color: var(--red);
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  .reminder-item.done .check-icon { display: block; }
+
+  .reminder-text {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: #888;
+    flex: 1;
+  }
+
+  .reminder-tag {
+    font-size: 7px;
+    letter-spacing: 0.25em;
+    color: #2e2e2e;
+    text-transform: uppercase;
+  }
+
+  /* Progress */
+  .progress-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .progress-item {
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .progress-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .progress-value {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--red);
+  }
+
+  .progress-bar {
+    height: 2px;
+    background: #1a1a1a;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7f1d1d, var(--red));
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 8px rgba(220,38,38,0.4);
+  }
+
+  /* Progress controls */
+  .progress-controls {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    padding: 3px;
+    background: none;
+    border: 1px solid #1e1e1e;
+    color: #333;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.1em;
+  }
+
+  .ctrl-btn:hover { border-color: var(--red); color: var(--red); }
+  .ctrl-btn.minus:hover { border-color: #333; color: #666; }
+
+  /* Footer */
+  .footer-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 0.3s;
+  }
+
+  .footer-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .footer-stat-val {
+    font-size: 18px;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+
+  .footer-stat-val span {
+    font-size: 10px;
+    color: var(--red);
+  }
+
+  .footer-stat-lbl {
+    font-size: 7px;
+    letter-spacing: 0.35em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .reset-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 0.3em;
+    color: #222;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid #1a1a1a;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- REMINDERS -->
+  <div class="section" id="reminders-section">
+    <div class="section-header">
+      <div class="section-dot"></div>
+      <span class="section-title">Erinnerungen</span>
+      <span class="section-day" id="day-label">—</span>
+    </div>
+    <div class="reminder-list" id="reminder-list"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="section" id="progress-section">
+    <div class="section-header">
+      <div class="section-dot"></div>
+      <span class="section-title">Tagesfortschritt</span>
+    </div>
+    <div class="progress-list" id="progress-list"></div>
+  </div>
+
+  <!-- FOOTER STATS -->
+  <div class="footer-row">
+    <div class="footer-stat">
+      <div>
+        <div class="footer-stat-val" id="done-count">0<span>/0</span></div>
+        <div class="footer-stat-lbl">Erledigt</div>
+      </div>
+    </div>
+    <div class="footer-stat">
+      <div>
+        <div class="footer-stat-val" id="progress-avg">0<span>%</span></div>
+        <div class="footer-stat-lbl">Gesamt</div>
+      </div>
+    </div>
+    <button class="reset-btn" onclick="resetDay()">Reset · Neuer Tag</button>
+  </div>
+
+</div>
+
+<script>
+const DAYS = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+
+// Tagesabhängige Erinnerungen
+const SCHEDULE = {
+  0: [ // Sonntag
+    { text: 'Wochenplanung für nächste Woche', tag: 'Planung' },
+    { text: 'Einkaufsliste vorbereiten', tag: 'Vorrat' },
+    { text: 'Active Recovery / Spazieren', tag: 'Training' },
+    { text: 'Meal Prep für Montag', tag: 'Ernährung' },
+    { text: 'Weekly Review FieldOS', tag: 'Arbeit' },
+  ],
+  1: [ // Montag
+    { text: 'Push Day absolvieren', tag: 'Training' },
+    { text: 'FieldOS Wochenziele setzen', tag: 'Arbeit' },
+    { text: 'Vorrat checken', tag: 'Vorrat' },
+    { text: 'Deep Work Block 09–12', tag: 'Fokus' },
+  ],
+  2: [ // Dienstag
+    { text: 'Pull Day absolvieren', tag: 'Training' },
+    { text: 'V.E.N.O.M. Dev Session', tag: 'Arbeit' },
+    { text: 'Protein-Ziel erreichen', tag: 'Ernährung' },
+    { text: 'Inbox auf 0 bringen', tag: 'Fokus' },
+  ],
+  3: [ // Mittwoch
+    { text: 'Active Recovery / Cardio', tag: 'Training' },
+    { text: 'Mid-Week Review', tag: 'Planung' },
+    { text: 'FieldOS Fortschritt dokumentieren', tag: 'Arbeit' },
+    { text: 'Entscheidungen loggen', tag: 'VENOM' },
+  ],
+  4: [ // Donnerstag
+    { text: 'Leg Day absolvieren', tag: 'Training' },
+    { text: 'FieldOS Feature Arbeit', tag: 'Arbeit' },
+    { text: 'Einkauf wenn nötig', tag: 'Vorrat' },
+    { text: 'Code Review / Debt Check', tag: 'VENOM' },
+  ],
+  5: [ // Freitag
+    { text: 'Push Day absolvieren', tag: 'Training' },
+    { text: 'Weekly Review starten', tag: 'Planung' },
+    { text: 'Offene Tasks schließen', tag: 'Arbeit' },
+    { text: 'Feature Bible updaten', tag: 'VENOM' },
+  ],
+  6: [ // Samstag
+    { text: 'Pull Day / Cardio', tag: 'Training' },
+    { text: 'Einkauf erledigen', tag: 'Vorrat' },
+    { text: 'Vorratsliste updaten', tag: 'Vorrat' },
+    { text: 'Relaxed Deep Work', tag: 'Fokus' },
+  ],
+};
+
+// Progress Tracker Definitionen
+const PROGRESS_DEFS = [
+  { id: 'wasser', label: 'Wasser', unit: 'L', max: 3, step: 0.5 },
+  { id: 'protein', label: 'Protein', unit: 'g', max: 180, step: 30 },
+  { id: 'kalorien', label: 'Kalorien', unit: 'kcal', max: 2500, step: 250 },
+  { id: 'tasks', label: 'Tasks Done', unit: '', max: 5, step: 1 },
+];
+
+const today = new Date();
+const dayKey = `venom_${today.getFullYear()}_${today.getMonth()}_${today.getDate()}`;
+
+function getState() {
+  const raw = localStorage.getItem(dayKey);
+  if (raw) return JSON.parse(raw);
+  return { reminders: {}, progress: {} };
+}
+
+function saveState(state) {
+  localStorage.setItem(dayKey, JSON.stringify(state));
+}
+
+function renderReminders() {
+  const state = getState();
+  const dayIndex = today.getDay();
+  const items = SCHEDULE[dayIndex];
+  const list = document.getElementById('reminder-list');
+  document.getElementById('day-label').textContent = DAYS[dayIndex];
+
+  list.innerHTML = '';
+  items.forEach((item, i) => {
+    const done = state.reminders[i] || false;
+    const el = document.createElement('div');
+    el.className = `reminder-item${done ? ' done' : ''}`;
+    el.innerHTML = `
+      <div class="checkbox"><span class="check-icon">✓</span></div>
+      <span class="reminder-text">${item.text}</span>
+      <span class="reminder-tag">${item.tag}</span>
+    `;
+    el.onclick = () => {
+      const s = getState();
+      s.reminders[i] = !s.reminders[i];
+      saveState(s);
+      renderReminders();
+      updateFooter();
+    };
+    list.appendChild(el);
+  });
+}
+
+function renderProgress() {
+  const state = getState();
+  const list = document.getElementById('progress-list');
+  list.innerHTML = '';
+
+  PROGRESS_DEFS.forEach(def => {
+    const val = state.progress[def.id] || 0;
+    const pct = Math.min(100, Math.round((val / def.max) * 100));
+    const el = document.createElement('div');
+    el.className = 'progress-item';
+    el.innerHTML = `
+      <div class="progress-top">
+        <span class="progress-label">${def.label}</span>
+        <span class="progress-value">${val}${def.unit} · ${pct}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="progress-controls">
+        <button class="ctrl-btn minus" onclick="adjustProgress('${def.id}', ${-def.step}, ${def.max}, ${def.step})">−</button>
+        <button class="ctrl-btn" onclick="adjustProgress('${def.id}', ${def.step}, ${def.max}, ${def.step})">+ ${def.step}${def.unit}</button>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function adjustProgress(id, delta, max, step) {
+  const s = getState();
+  const cur = s.progress[id] || 0;
+  s.progress[id] = Math.max(0, Math.min(max, Math.round((cur + delta) * 10) / 10));
+  saveState(s);
+  renderProgress();
+  updateFooter();
+}
+
+function updateFooter() {
+  const state = getState();
+  const dayIndex = today.getDay();
+  const total = SCHEDULE[dayIndex].length;
+  const done = Object.values(state.reminders).filter(Boolean).length;
+
+  const progressVals = PROGRESS_DEFS.map(d => {
+    const v = state.progress[d.id] || 0;
+    return Math.min(100, (v / d.max) * 100);
+  });
+  const avg = Math.round((progressVals.reduce((a,b) => a+b, 0) / progressVals.length + (done/total)*100) / 2);
+
+  document.getElementById('done-count').innerHTML = `${done}<span>/${total}</span>`;
+  document.getElementById('progress-avg').innerHTML = `${avg}<span>%</span>`;
+}
+
+function resetDay() {
+  if (confirm('Tag zurücksetzen?')) {
+    localStorage.removeItem(dayKey);
+    renderReminders();
+    renderProgress();
+    updateFooter();
+  }
+}
+
+// Init
+renderReminders();
+renderProgress();
+updateFooter();
+</script>
+</body>
+</html>
