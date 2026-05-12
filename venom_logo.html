@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENOM</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Scan lines */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.01) 2px,
+      rgba(255,255,255,0.01) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* Top line */
+  .top-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 2px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 0.2s;
+  }
+
+  .top-line .bar {
+    height: 1px;
+    width: 60px;
+    background: linear-gradient(90deg, transparent, #dc2626);
+  }
+  .top-line .bar.right {
+    background: linear-gradient(90deg, #dc2626, transparent);
+  }
+
+  .top-line span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    color: #dc2626;
+    text-transform: uppercase;
+  }
+
+  /* Main wordmark */
+  .wordmark {
+    position: relative;
+    line-height: 0.85;
+  }
+
+  .wordmark .main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 18vw, 140px);
+    letter-spacing: 0.12em;
+    color: transparent;
+    -webkit-text-stroke: 1px #f0f0f0;
+    position: relative;
+    opacity: 0;
+    animation: revealText 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s;
+  }
+
+  /* Glitch layers */
+  .wordmark .main::before,
+  .wordmark .main::after {
+    content: 'V.E.N.O.M.';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .wordmark .main::before {
+    color: #dc2626;
+    -webkit-text-stroke: 0;
+    clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%);
+    animation: glitch1 6s infinite;
+    opacity: 0.7;
+  }
+
+  .wordmark .main::after {
+    color: #1a1a2e;
+    -webkit-text-stroke: 0;
+    clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%);
+    animation: glitch2 6s infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes glitch1 {
+    0%, 90%, 100% { transform: translate(0); opacity: 0; }
+    92% { transform: translate(-3px, 1px); opacity: 0.7; }
+    94% { transform: translate(3px, -1px); opacity: 0.7; }
+    96% { transform: translate(0); opacity: 0; }
+  }
+
+  @keyframes glitch2 {
+    0%, 91%, 100% { transform: translate(0); opacity: 0; }
+    93% { transform: translate(3px, 0); opacity: 0.5; }
+    95% { transform: translate(-2px, 1px); opacity: 0.5; }
+    97% { transform: translate(0); opacity: 0; }
+  }
+
+  /* Fill sweep on load */
+  .fill-sweep {
+    position: absolute;
+    top: 0; left: 0;
+    width: 0%;
+    height: 100%;
+    background: #f0f0f0;
+    mix-blend-mode: overlay;
+    animation: sweep 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s;
+    pointer-events: none;
+  }
+
+  @keyframes sweep {
+    0% { width: 0%; opacity: 1; }
+    60% { width: 100%; opacity: 1; }
+    100% { width: 100%; opacity: 0; }
+  }
+
+  /* Subtitle */
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(8px, 1.5vw, 11px);
+    letter-spacing: 0.45em;
+    color: #333;
+    text-transform: uppercase;
+    margin-top: 6px;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 1s;
+  }
+
+  /* Bottom accent */
+  .bottom-line {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 0.8s;
+  }
+
+  .bottom-line .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #dc2626;
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  .bottom-line .dot:nth-child(2) { animation-delay: 0.3s; background: #555; }
+  .bottom-line .dot:nth-child(3) { animation-delay: 0.6s; background: #333; }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes revealText {
+    from { opacity: 0; transform: translateY(10px); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div class="top-line">
+    <div class="bar"></div>
+    <span>System Online</span>
+    <div class="bar right"></div>
+  </div>
+
+  <div class="wordmark">
+    <div class="fill-sweep"></div>
+    <div class="main">V.E.N.O.M.</div>
+  </div>
+
+  <div class="subtitle">Virtual Executive Neural Operations Module</div>
+
+  <div class="bottom-line">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+</div>
+
+</body>
+</html>
