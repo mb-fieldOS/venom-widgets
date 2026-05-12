@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENOM Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --red: #dc2626; --white: #f0f0f0; --gray: #555; --bg: #0a0a0a; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px);
+    pointer-events: none; z-index: 100;
+  }
+
+  .widget {
+    width: 100%; max-width: 320px; padding: 22px;
+    position: relative; opacity: 0;
+    animation: fadeIn 0.7s ease forwards 0.2s;
+  }
+
+  .bracket { position: absolute; width: 10px; height: 10px; }
+  .bracket.tl { top:0; left:0; border-top:1px solid var(--red); border-left:1px solid var(--red); opacity:0.4; }
+  .bracket.tr { top:0; right:0; border-top:1px solid var(--red); border-right:1px solid var(--red); opacity:0.4; }
+  .bracket.bl { bottom:0; left:0; border-bottom:1px solid var(--red); border-left:1px solid var(--red); opacity:0.4; }
+  .bracket.br { bottom:0; right:0; border-bottom:1px solid var(--red); border-right:1px solid var(--red); opacity:0.4; }
+
+  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .location { display:flex; align-items:center; gap:6px; }
+  .loc-dot {
+    width:5px; height:5px; border-radius:50%;
+    background:var(--red); box-shadow:0 0 6px rgba(220,38,38,0.9);
+    animation: locPulse 2s ease-in-out infinite;
+  }
+  @keyframes locPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .loc-name { font-size:8px; letter-spacing:0.4em; color:var(--gray); text-transform:uppercase; }
+  .update-time { font-size:7px; letter-spacing:0.2em; color:#222; text-transform:uppercase; }
+
+  .main {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #141414;
+  }
+  .temp { font-size:68px; color:var(--white); line-height:1; letter-spacing:-0.02em; }
+  .temp-unit { font-size:22px; color:var(--red); vertical-align:super; }
+  .feels { font-size:9px; letter-spacing:0.2em; color:#333; text-transform:uppercase; margin-top:5px; }
+  .right { text-align:right; }
+  .icon { font-size:38px; display:block; margin-bottom:6px; }
+  .condition { font-family:'Rajdhani',sans-serif; font-size:11px; font-weight:300; letter-spacing:0.18em; color:var(--gray); text-transform:uppercase; }
+
+  .stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .stat { padding:9px 6px; border:1px solid #141414; background:rgba(255,255,255,0.015); text-align:center; }
+  .stat-val { font-size:17px; color:var(--white); display:block; margin-bottom:3px; }
+  .stat-val em { font-style:normal; font-size:9px; color:var(--red); }
+  .stat-lbl { font-size:7px; letter-spacing:0.3em; color:#2e2e2e; text-transform:uppercase; }
+
+  .state-wrap { text-align:center; padding:30px 0; font-size:8px; letter-spacing:0.4em; text-transform:uppercase; }
+  .loading-wrap { color:#333; animation:loadBlink 1.5s ease-in-out infinite; }
+  .error-wrap { color:var(--red); line-height:2; }
+  @keyframes loadBlink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="widget">
+  <div class="bracket tl"></div><div class="bracket tr"></div>
+  <div class="bracket bl"></div><div class="bracket br"></div>
+
+  <div id="loading" class="state-wrap loading-wrap">Fetching Weather ···</div>
+
+  <div id="content" style="display:none">
+    <div class="header">
+      <div class="location">
+        <div class="loc-dot"></div>
+        <span class="loc-name">Mering · Bayern</span>
+      </div>
+      <span class="update-time" id="update-time">—</span>
+    </div>
+    <div class="main">
+      <div>
+        <div class="temp" id="temp">—<span class="temp-unit">°C</span></div>
+        <div class="feels" id="feels">Gefühlt —°</div>
+      </div>
+      <div class="right">
+        <span class="icon" id="icon">—</span>
+        <span class="condition" id="condition">—</span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="stat-val" id="humidity">—<em>%</em></span><span class="stat-lbl">Feuchtigkeit</span></div>
+      <div class="stat"><span class="stat-val" id="wind">—<em> km/h</em></span><span class="stat-lbl">Wind</span></div>
+      <div class="stat"><span class="stat-val" id="precip">—<em>%</em></span><span class="stat-lbl">Regen</span></div>
+    </div>
+  </div>
+
+  <div id="error" class="state-wrap error-wrap" style="display:none"></div>
+</div>
+
+<script>
+  const CONDITIONS = {
+    0:['☀️','Klar'], 1:['🌤','Leicht bewölkt'], 2:['⛅','Bewölkt'],
+    3:['☁️','Bedeckt'], 45:['🌫','Nebel'], 48:['🌫','Reifnebel'],
+    51:['🌦','Leichter Niesel'], 53:['🌦','Niesel'], 55:['🌧','Starker Niesel'],
+    61:['🌧','Leichter Regen'], 63:['🌧','Regen'], 65:['🌧','Starker Regen'],
+    71:['❄️','Leichter Schnee'], 73:['❄️','Schnee'], 75:['❄️','Starker Schnee'],
+    80:['🌦','Schauer'], 81:['🌧','Starke Schauer'], 82:['⛈','Heftige Schauer'],
+    95:['⛈','Gewitter'], 96:['⛈','Gewitter + Hagel'], 99:['⛈','Starkes Gewitter']
+  };
+
+  function getCondition(code) {
+    if (CONDITIONS[code]) return CONDITIONS[code];
+    if (code <= 49) return ['🌫','Nebel'];
+    if (code <= 69) return ['🌧','Regen'];
+    if (code <= 79) return ['❄️','Schnee'];
+    if (code <= 99) return ['⛈','Gewitter'];
+    return ['🌡','Unbekannt'];
+  }
+
+  function pad(n) { return String(n).padStart(2,'0'); }
+
+  async function fetchWeather() {
+    try {
+      const url =
+        'https://api.open-meteo.com/v1/forecast' +
+        '?latitude=48.265&longitude=10.984' +
+        '&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code' +
+        '&hourly=precipitation_probability' +
+        '&forecast_days=1' +
+        '&timezone=Europe%2FBerlin';
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const c = data.current;
+
+      const nowHour = new Date().getHours();
+      const precip = data.hourly?.precipitation_probability?.[nowHour] ?? 0;
+      const [icon, condition] = getCondition(c.weather_code);
+      const now = new Date();
+
+      document.getElementById('temp').innerHTML = `${Math.round(c.temperature_2m)}<span class="temp-unit">°C</span>`;
+      document.getElementById('feels').textContent = `Gefühlt ${Math.round(c.apparent_temperature)}°`;
+      document.getElementById('icon').textContent = icon;
+      document.getElementById('condition').textContent = condition;
+      document.getElementById('humidity').innerHTML = `${c.relative_humidity_2m}<em>%</em>`;
+      document.getElementById('wind').innerHTML = `${Math.round(c.wind_speed_10m)}<em> km/h</em>`;
+      document.getElementById('precip').innerHTML = `${precip}<em>%</em>`;
+      document.getElementById('update-time').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+    } catch(e) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = `Connection Failed · ${e.message}`;
+    }
+  }
+
+  fetchWeather();
+  setInterval(fetchWeather, 10 * 60 * 1000);
+</script>
+</body>
+</html>
